@@ -1,0 +1,34 @@
+// Genera el contenido del Dockerfile para un proyecto serez-http
+//
+// generateDockerfile(main_sz, port) → string con el Dockerfile completo
+//
+// Estrategia de red:
+//   serez-code solo escucha en 127.0.0.1. Para que Docker exponga el puerto
+//   al exterior, se instala socat como proxy transparente:
+//   socat 0.0.0.0:PORT → 127.0.0.1:PORT
+//
+// Multi-stage build:
+//   Stage 1 (builder): compila sz desde el repo oficial usando Rust
+//   Stage 2 (runtime): Ubuntu limpio con solo el binario sz + socat
+
+fn generateDockerfile(main_sz, port) {
+    let df = ""
+    df = df + "# Generado por serez-apipack v1.0.0\n"
+    df = df + "\n"
+    df = df + "FROM rust:1.78-slim AS builder\n"
+    df = df + "RUN cargo install --git https://github.com/Sergio3215/serez-code sz\n"
+    df = df + "\n"
+    df = df + "FROM ubuntu:22.04\n"
+    df = df + "RUN apt-get update && \\\n"
+    df = df + "    apt-get install -y socat && \\\n"
+    df = df + "    rm -rf /var/lib/apt/lists/*\n"
+    df = df + "COPY --from=builder /usr/local/cargo/bin/sz /usr/local/bin/sz\n"
+    df = df + "WORKDIR /app\n"
+    df = df + "COPY . .\n"
+    df = df + "RUN sz install\n"
+    df = df + "EXPOSE " + port + "\n"
+    df = df + "CMD sh -c \"sz " + main_sz + " & \\\n"
+    df = df + "    sleep 1 && \\\n"
+    df = df + "    socat TCP-LISTEN:" + port + ",fork,reuseaddr TCP:127.0.0.1:" + port + "\"\n"
+    return df
+}

@@ -1,0 +1,14 @@
+// serez-apipack — Docker packager for serez-http projects
+// Version 1.0.0
+//
+// Usage:
+//   sz pack.sz [project=<dir>] [tag=<name:version>] [port=<3000>]
+//
+// Importable utilities (for testing):
+//   readConfig(dir)                  ← lee serez.json del proyecto
+//   generateDockerfile(main, port)   ← genera contenido del Dockerfile
+//   _cfgGet(cfg, field, default)     ← acceso seguro a dict de config
+
+import "src/config"
+import "src/docker"
+import "src/runner"

@@ -1,0 +1,69 @@
+// pack.sz — empaquetador Docker para proyectos serez-http
+//
+// Uso (clave=valor SIN guiones):
+//   sz pack.sz [project=<dir>] [tag=<nombre:version>] [port=<3000>]
+//
+// project  — directorio raíz del proyecto a empaquetar (default: .)
+// tag      — nombre:version de la imagen Docker (default: name:version del serez.json)
+// port     — puerto expuesto (default: 3000)
+//
+// Requiere Docker instalado en el sistema.
+// Genera un Dockerfile en el directorio del proyecto y ejecuta docker build.
+
+import "src/config"
+import "src/docker"
+import "src/runner"
+
+fn getOpt(argv, key, def) {
+    let prefix = key + "="
+    let i = 0
+    while (i < argv.length()) {
+        if (argv[i].startsWith(prefix)) {
+            return argv[i].substring(prefix.length(), argv[i].length())
+        }
+        i = i + 1
+    }
+    return def
+}
+
+fn int main() {
+    let argv        = Env.args()
+    let project_dir = getOpt(argv, "project", ".")
+    let port        = getOpt(argv, "port", "3000")
+    let tag_arg     = getOpt(argv, "tag", "")
+
+    out "── serez-apipack ────────────────────────────"
+
+    let cfg = readConfig(project_dir)
+    if (cfg == null) { return 1 }
+
+    let name    = cfg["name"]
+    let version = cfg["version"]
+    let main_sz = cfg["main"]
+    let tag = name + ":" + version
+    if (tag_arg != "") { tag = tag_arg }
+
+    out "  project  = " + project_dir
+    out "  name     = " + name
+    out "  version  = " + version
+    out "  main     = " + main_sz
+    out "  port     = " + port
+    out "  tag      = " + tag
+    out "─────────────────────────────────────────────"
+
+    let df_path = project_dir + "/Dockerfile"
+    let dockerfile = generateDockerfile(main_sz, port)
+    File.write(df_path, dockerfile)
+    out "[ok] Dockerfile generado: " + df_path
+
+    let code = runDockerBuild(project_dir, tag)
+    if (code == 0) {
+        out "[done] imagen lista: " + tag
+        out "  Correr con: docker run -p " + port + ":" + port + " " + tag
+    } else {
+        out "[error] docker build falló (código " + code + ")"
+    }
+    return code
+}
+
+let _exit = main()

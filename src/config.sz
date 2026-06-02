@@ -1,0 +1,55 @@
+// Lee y valida el serez.json del proyecto a empaquetar
+//
+// readConfig(project_dir) → dict con name, version, main
+//                         → null si falta el archivo o es inválido
+//
+// _cfgGet(cfg, field, default) → valor del campo o default si no existe
+// (usa JSON.stringify como workaround al dict missing-key throw)
+
+fn readConfig(dir) {
+    let path = dir + "/serez.json"
+    if (!File.exists(path)) {
+        out "ERROR: no se encuentra serez.json en: " + dir
+        return null
+    }
+    let content = File.read(path)
+    let cfg = JSON.parse(content)
+    if (cfg == null) {
+        out "ERROR: serez.json no es JSON válido en: " + dir
+        return null
+    }
+    let name    = _cfgGet(cfg, "name", "")
+    let version = _cfgGet(cfg, "version", "1.0.0")
+    let main_sz = _cfgGet(cfg, "main", "index.sz")
+    if (name == "") {
+        out "ERROR: serez.json debe tener campo 'name'"
+        return null
+    }
+    let cfg <string, string> = ()
+    cfg["name"]    = name
+    cfg["version"] = version
+    cfg["main"]    = main_sz
+    return cfg
+}
+
+// Extrae un campo string del dict usando JSON.stringify como puente seguro,
+// evitando el throw por clave ausente.
+fn _cfgGet(cfg, field, default_val) {
+    let s = JSON.stringify(cfg)
+    let key = "\"" + field + "\":"
+    let idx = s.indexOf(key)
+    if (idx < 0) { return default_val }
+    let rest = s.substring(idx + key.length(), s.length()).trim()
+    if (rest.startsWith("\"")) {
+        let inner = rest.substring(1, rest.length())
+        let end = inner.indexOf("\"")
+        if (end < 0) { return default_val }
+        return inner.substring(0, end)
+    }
+    // Valor no-string (número, bool)
+    let end = rest.indexOf(",")
+    let end2 = rest.indexOf("}")
+    if (end < 0 || (end2 >= 0 && end2 < end)) { end = end2 }
+    if (end < 0) { return rest.trim() }
+    return rest.substring(0, end).trim()
+}

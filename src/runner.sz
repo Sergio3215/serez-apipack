@@ -1,0 +1,9 @@
+// Ejecuta docker build en el directorio del proyecto
+//
+// runDockerBuild(project_dir, tag) → exit code (0 = ok)
+
+fn runDockerBuild(project_dir, tag) {
+    out "[docker] construyendo imagen: " + tag
+    let result = OS.exec("docker build -t " + tag + " " + project_dir)
+    return result
+}
