@@ -4,6 +4,13 @@
 
 fn runDockerBuild(project_dir, tag) {
     out "[docker] construyendo imagen: " + tag
-    let result = OS.exec("docker build -t " + tag + " " + project_dir)
+
+    unsafe{
+        OS.exec("docker", ["--version"])
+    }
+
+    let result = unsafe{
+        OS.exec("docker", ["build", "-t", tag, project_dir])
+    }
     return result
 }
