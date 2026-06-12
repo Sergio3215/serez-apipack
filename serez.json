@@ -1,6 +1,6 @@
 {
   "name": "serez-apipack",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Empaquetador Docker para proyectos serez-http — genera imagen autocontenida lista para deploy",
   "author": "SerezDev",
   "dependencies": {},

@@ -1,0 +1,53 @@
+// sec_apipack.sz — Tests de seguridad para serez-apipack
+
+import "src/docker"
+import "src/config"
+
+// ── Inyección de shell en puerto del Dockerfile ───────────────────────────────
+test("generateDockerfile: puerto con chars especiales queda en el texto", () => {
+    // El packager genera el Dockerfile tal cual; el runtime Docker valida el puerto.
+    // Verificamos que el output no crashea y contiene el valor literal.
+    let df = generateDockerfile("index.sz", "3000; echo evil")
+    assert(df.length() > 0, "no crashea con puerto no numérico")
+    assert(df.includes("3000; echo evil"), "valor literal en EXPOSE (sin sanitizar → documentado)")
+})
+
+// ── Inyección en main_sz ──────────────────────────────────────────────────────
+test("generateDockerfile: main_sz con path traversal queda literal", () => {
+    let df = generateDockerfile("../../etc/passwd", "3000")
+    assert(df.length() > 0, "no crashea")
+    assert(df.includes("../../etc/passwd"), "path traversal literal en CMD")
+})
+
+// ── _cfgGet: JSON con campo anidado no confunde la búsqueda ───────────────────
+test("_cfgGet: dict anidado con campo homónimo", () => {
+    // El field "name" aparece en un subdocumento; _cfgGet busca la primera ocurrencia.
+    let cfg <string, any> = ()
+    cfg["meta"] = "{ name: inner }"
+    cfg["name"] = "real-name"
+    let v = _cfgGet(cfg, "name", "def")
+    // El resultado depende del stringify: lo importante es que no crashea.
+    assert(v.length() > 0, "retorna algo no vacío")
+})
+
+// ── _cfgGet: default vacío cuando campo no existe ─────────────────────────────
+test("_cfgGet: default vacío explícito", () => {
+    let cfg <string, string> = ()
+    cfg["x"] = "y"
+    assert(_cfgGet(cfg, "missing", "") == "", "default vacío")
+})
+
+// ── readConfig: directorio con path traversal → no existe → null ──────────────
+test("readConfig: path traversal retorna null (directorio no existe)", () => {
+    let r = readConfig("../../etc")
+    assert(r == null, "path traversal a directorio sin serez.json → null")
+})
+
+// ── generateDockerfile: string muy largo no cuelga ────────────────────────────
+test("generateDockerfile: main_sz muy largo", () => {
+    let big = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.sz"
+    let df = generateDockerfile(big, "3000")
+    assert(df.length() > 0, "no cuelga con path largo")
+})
+
+summary()

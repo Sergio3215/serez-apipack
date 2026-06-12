@@ -1,0 +1,50 @@
+// unit_config.sz — Tests para serez-apipack/src/config.sz (_cfgGet + readConfig)
+
+use permissions { File }
+import "src/config"
+
+// ── _cfgGet: acceso seguro a campo de dict via stringify ──────────────────────
+test("_cfgGet: campo string presente", () => {
+    let cfg <string, string> = ()
+    cfg["name"] = "mi-app"
+    cfg["version"] = "2.0.0"
+    let v = _cfgGet(cfg, "name", "default")
+    assert(v == "mi-app", "nombre correcto")
+})
+test("_cfgGet: campo ausente retorna default", () => {
+    let cfg <string, string> = ()
+    cfg["name"] = "app"
+    let v = _cfgGet(cfg, "main", "index.sz")
+    assert(v == "index.sz", "default cuando ausente")
+})
+test("_cfgGet: version presente", () => {
+    let cfg <string, string> = ()
+    cfg["name"] = "app"
+    cfg["version"] = "1.2.3"
+    let v = _cfgGet(cfg, "version", "0.0.0")
+    assert(v == "1.2.3", "version correcta")
+})
+
+// ── readConfig: usa el serez.json del propio serez-apipack ────────────────────
+test("readConfig('.') lee serez.json válido", () => {
+    let cfg = readConfig(".")
+    assert(cfg != null, "config no nulo")
+})
+test("readConfig: nombre del paquete", () => {
+    let cfg = readConfig(".")
+    assert(cfg != null, "config cargado")
+    let name = cfg["name"]
+    assert(name == "serez-apipack", "nombre correcto")
+})
+test("readConfig: versión presente", () => {
+    let cfg = readConfig(".")
+    assert(cfg != null, "config cargado")
+    let ver = cfg["version"]
+    assert(ver.length() > 0, "versión no vacía")
+})
+test("readConfig: ruta inexistente retorna null", () => {
+    let cfg = readConfig("./no-existe-este-directorio-xyzabc")
+    assert(cfg == null, "null en directorio inexistente")
+})
+
+summary()

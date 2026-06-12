@@ -1,0 +1,39 @@
+// unit_docker.sz — Tests para serez-apipack/src/docker.sz (generateDockerfile)
+
+import "src/docker"
+
+// ── Contenido básico del Dockerfile generado ──────────────────────────────────
+test("generateDockerfile: contiene FROM rust (stage builder)", () => {
+    let df = generateDockerfile("index.sz", "3000")
+    assert(df.includes("FROM rust"), "stage builder presente")
+})
+test("generateDockerfile: contiene FROM ubuntu (stage runtime)", () => {
+    let df = generateDockerfile("index.sz", "3000")
+    assert(df.includes("FROM ubuntu"), "stage runtime presente")
+})
+test("generateDockerfile: contiene EXPOSE con el puerto", () => {
+    let df = generateDockerfile("app.sz", "8080")
+    assert(df.includes("EXPOSE 8080"), "puerto correcto en EXPOSE")
+})
+test("generateDockerfile: contiene el main_sz en CMD", () => {
+    let df = generateDockerfile("server.sz", "4000")
+    assert(df.includes("sz server.sz"), "main_sz en CMD")
+})
+test("generateDockerfile: contiene socat como proxy", () => {
+    let df = generateDockerfile("index.sz", "3000")
+    assert(df.includes("socat"), "socat presente")
+})
+test("generateDockerfile: contiene sz install para dependencias", () => {
+    let df = generateDockerfile("index.sz", "3000")
+    assert(df.includes("sz install"), "sz install presente")
+})
+test("generateDockerfile: retorna string no vacío", () => {
+    let df = generateDockerfile("index.sz", "3000")
+    assert(df.length() > 100, "Dockerfile tiene contenido suficiente")
+})
+test("generateDockerfile: puerto 80 genérico", () => {
+    let df = generateDockerfile("main.sz", "80")
+    assert(df.includes("EXPOSE 80"), "puerto 80 ok")
+})
+
+summary()
