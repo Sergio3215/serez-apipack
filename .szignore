@@ -3,3 +3,6 @@ publish.ps1
 *.ps1
 *.sh
 tests/
+
+# Documentacion interna generada (no se versiona ni se publica)
+documentacion-internal.md
